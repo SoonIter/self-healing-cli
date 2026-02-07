@@ -2,33 +2,35 @@
 
 ## Context
 
-项目目标：构建一个 CI 自动修复 CLI 工具，包含两个命令：
-- `collect`：运行 CI 命令并捕获日志到文件
-- `heal`：将日志喂给 Copilot CLI 进行修复，验证通过则创建 PR，验证失败则在当前 PR 上留 comment
+Goal: Build a CI auto-fix CLI tool with two commands:
 
-当前状态：项目骨架已就绪（Rslib + Rstest + Biome），`src/index.ts` 只有一个 placeholder 函数。`.github/workflows/copilot.yml` 有一个 shell 脚本版本的简易实现。
+- `collect`: Run a CI command and capture logs to a file
+- `heal`: Feed logs to Copilot CLI for auto-fix, create a PR if verification passes, or leave a comment on the current commit if it fails
 
-关键决定：
-- **仅 CLI 工具**，不导出库 API
-- **Node 22**（Copilot CLI 要求）
-- **npm 安装 Copilot CLI**：`npm install -g @github/copilot`（替代 curl）
-- **验证失败时只留 Comment**，不创建 WIP PR
+Initial state: Project skeleton is ready (Rslib + Rstest + Biome), `src/index.ts` only has a placeholder function. `.github/workflows/copilot.yml` has a simple shell-script implementation.
+
+Key decisions:
+
+- **CLI-only** — no library API exports
+- **Node 22** (required by Copilot CLI)
+- **Install Copilot CLI via npm**: `npm install -g @github/copilot` (instead of curl)
+- **Comment only on verification failure** — do not create a WIP PR
 
 ---
 
-## 文件结构
+## File Structure
 
-```
+```text
 src/
-  cli.ts                # CLI 入口（bin）
+  cli.ts                # CLI entry point (bin)
   commands/
-    collect.ts          # collect 命令
-    heal.ts             # heal 命令
+    collect.ts          # collect command
+    heal.ts             # heal command
   utils/
-    exec.ts             # child_process 封装
-    git.ts              # git 操作助手
-    github.ts           # gh CLI 助手（PR、comment）
-    logger.ts           # 日志输出
+    exec.ts             # child_process wrapper
+    git.ts              # git operation helpers
+    github.ts           # gh CLI helpers (PR, comment)
+    logger.ts           # log output
 tests/
   commands/
     collect.test.ts
@@ -41,135 +43,146 @@ tests/
 
 ---
 
-## Task 1: 项目配置 — bin 入口和构建配置
+## Task 1: Project Config — bin Entry and Build Config
 
-**修改文件：**
-- `package.json` — 添加 `bin` 字段，移除 `exports`/`types`（仅 CLI）
-- `rslib.config.ts` — 入口改为 `cli.ts`
-- `tsconfig.json` — include 加入 `tests`
+**Modified files:**
 
-**要点：**
-- `package.json` 中 `bin: { "self-healing": "./dist/cli.js" }`
-- rslib `source.entry` 只需 `{ cli: './src/cli.ts' }`，无需 dts
-- 构建后 `dist/cli.js` 需要可执行
+- `package.json` — add `bin` field, remove `exports`/`types` (CLI-only)
+- `rslib.config.ts` — change entry to `cli.ts`
+- `tsconfig.json` — add `tests` to `include`
 
-**验证：** `pnpm build` 成功产出 `dist/cli.js`
+**Key points:**
 
----
+- `package.json`: `bin: { "self-healing": "./dist/cli.js" }`
+- rslib `source.entry` only needs `{ cli: './src/cli.ts' }`, no dts
+- `dist/cli.js` must be executable after build
 
-## Task 2: exec 工具 — Shell 命令执行封装
-
-**创建文件：** `src/utils/exec.ts`, `tests/utils/exec.test.ts`
-
-**要点：**
-- 封装 `execSync`，返回 `{ ok, stdout, stderr, exitCode }`
-- 支持 `cwd` 和 `env` 选项
-- 捕获异常返回错误信息而非抛出
-
-**测试：**
-- `exec('echo hello')` → ok=true, stdout 包含 "hello"
-- `exec('exit 1')` → ok=false, exitCode≠0
+**Verification:** `pnpm build` successfully produces `dist/cli.js`
 
 ---
 
-## Task 3: logger 工具
+## Task 2: exec Utility — Shell Command Execution Wrapper
 
-**创建文件：** `src/utils/logger.ts`
+**Created files:** `src/utils/exec.ts`, `tests/utils/exec.test.ts`
 
-**要点：** 简单封装 console，加 `[self-healing]` 前缀。无需测试。
+**Key points:**
 
----
+- Wrap `execSync`, return `{ ok, stdout, stderr, exitCode }`
+- Support `cwd` and `env` options
+- Catch exceptions and return error info instead of throwing
 
-## Task 4: collect 命令
+**Tests:**
 
-**创建文件：** `src/commands/collect.ts`, `tests/commands/collect.test.ts`
-
-**要点：**
-- 接收 `{ command, outputFile }` 参数
-- 用 exec 执行命令，将 stdout+stderr 合并写入文件
-- 返回 `{ exitCode, logFile }`
-
-**测试：**
-- 成功命令：文件存在且包含输出，exitCode=0
-- 失败命令：文件包含输出，exitCode≠0
+- `exec('echo hello')` → ok=true, stdout contains "hello"
+- `exec('exit 1')` → ok=false, exitCode !== 0
 
 ---
 
-## Task 5: git 助手
+## Task 3: Logger Utility
 
-**创建文件：** `src/utils/git.ts`, `tests/utils/git.test.ts`
+**Created file:** `src/utils/logger.ts`
 
-**要点：**
+**Key points:** Simple console wrapper with `[self-healing]` prefix. No tests needed.
+
+---
+
+## Task 4: collect Command
+
+**Created files:** `src/commands/collect.ts`, `tests/commands/collect.test.ts`
+
+**Key points:**
+
+- Accept `{ command, outputFile }` params
+- Execute command via exec, write combined stdout+stderr to file
+- Return `{ exitCode, logFile }`
+
+**Tests:**
+
+- Successful command: file exists and contains output, exitCode=0
+- Failing command: file contains output, exitCode !== 0
+
+---
+
+## Task 5: Git Helpers
+
+**Created files:** `src/utils/git.ts`, `tests/utils/git.test.ts`
+
+**Key points:**
+
 - `getCurrentBranch(cwd?)` — git branch --show-current
 - `hasChanges(cwd?)` — git status --porcelain
 - `createBranch(name, cwd?)` — git checkout -b
 - `commitAll(message, cwd?)` — git add -A && git commit
 - `push(branch, cwd?)` — git push origin
-- `configBot(cwd?)` — 设置 CI bot 用户名/邮箱
+- `configBot(cwd?)` — set CI bot username/email
 
-**测试：** 在临时 git repo 中测试 `getCurrentBranch` 和 `hasChanges`
-
----
-
-## Task 6: GitHub 助手
-
-**创建文件：** `src/utils/github.ts`, `tests/utils/github.test.ts`
-
-**要点：**
-- `buildPrBody(options)` — 生成 PR markdown 内容
-- `createPullRequest(options)` — 调用 `gh pr create`
-- `commentOnCommit(options)` — 调用 `gh api` 在 commit 上留评论
-
-**测试：** 只测试 `buildPrBody` 纯函数（gh 命令为集成测试）
+**Tests:** Test `getCurrentBranch` and `hasChanges` in a temp git repo
 
 ---
 
-## Task 7: heal 命令
+## Task 6: GitHub Helpers
 
-**创建文件：** `src/commands/heal.ts`, `tests/commands/heal.test.ts`
+**Created files:** `src/utils/github.ts`, `tests/utils/github.test.ts`
 
-**核心流程：**
-1. 读取日志文件尾部 N 行
-2. 构建 Copilot prompt
-3. 配置 git bot 用户
-4. 创建 fix 分支
-5. 调用 `copilot --prompt "..." --yolo [--model xxx]`
-6. 检查是否有文件变更
-7. 如有变更，运行 verify 命令
-8. **验证通过** → commit, push, 创建 PR
-9. **验证失败** → 在当前 commit 上留 comment 说明修复建议
-10. **无变更** → 留 comment 说明 Copilot 未产生修复
+**Key points:**
 
-**可测试的纯函数：**
-- `readLogTail(file, lines)` — 读取文件尾部行
-- `buildCopilotPrompt({ errorLog, verifyCommand })` — 构建 prompt
+- `buildPrBody(options)` — generate PR markdown body
+- `createPullRequest(options)` — call `gh pr create`
+- `commentOnCommit(options)` — call `gh api` to comment on a commit
+
+**Tests:** Only test `buildPrBody` pure function (gh commands are integration tests)
 
 ---
 
-## Task 8: CLI 入口
+## Task 7: heal Command
 
-**创建文件：** `src/cli.ts`
-**删除文件：** `src/index.ts`（不再需要库导出）
-**删除文件：** `tests/index.test.ts`（placeholder 测试）
+**Created files:** `src/commands/heal.ts`, `tests/commands/heal.test.ts`
 
-**要点：**
-- shebang: `#!/usr/bin/env node`
-- 用 `process.argv` 解析参数（不引入 CLI 框架）
-- 两个子命令：
+**Core flow:**
+
+1. Read the last N lines of the log file
+2. Build a Copilot prompt
+3. Configure git bot user
+4. Create a fix branch
+5. Run `copilot --prompt "..." --yolo [--model xxx]`
+6. Check for file changes
+7. If changes exist, run the verify command
+8. **Verification passes** → commit, push, create PR
+9. **Verification fails** → comment on the current commit with fix suggestions
+10. **No changes** → comment that Copilot produced no fix
+
+**Testable pure functions:**
+
+- `readLogTail(file, lines)` — read tail lines of a file
+- `buildCopilotPrompt({ errorLog, verifyCommand })` — build prompt string
+
+---
+
+## Task 8: CLI Entry Point
+
+**Created file:** `src/cli.ts`
+**Deleted files:** `src/index.ts` (library export no longer needed), `tests/index.test.ts` (placeholder test)
+
+**Key points:**
+
+- Shebang: `#!/usr/bin/env node`
+- Parse args with `process.argv` (no CLI framework)
+- Two subcommands:
   - `self-healing collect --command <cmd> --output <file>`
   - `self-healing heal --log <file> --verify <cmd> [--model <model>] [--tail <lines>]`
-- `--help` 打印帮助信息
+- `--help` prints usage information
 
 ---
 
 ## Task 9: GitHub Actions Workflow
 
-**修改文件：** `.github/workflows/copilot.yml`
+**Modified file:** `.github/workflows/copilot.yml`
 
-**关键变更：**
-- Node 版本升级到 22
-- 用 `npm install -g @github/copilot` 替代 curl 安装
-- 用 `npx self-healing collect` 和 `npx self-healing heal` 替代内联脚本
+**Key changes:**
+
+- Upgrade Node to 22
+- Use `npm install -g @github/copilot` instead of curl
+- Replace inline scripts with `npx self-healing collect` and `npx self-healing heal`
 
 ```yaml
 - name: Install Copilot CLI
@@ -187,21 +200,21 @@ tests/
 
 ---
 
-## Task 10: Lint + 全量验证
+## Task 10: Lint + Full Verification
 
 - `pnpm run check` — Biome lint/format
-- `pnpm test` — 全部测试通过
-- `pnpm build` — 构建成功
-- `node dist/cli.js --help` — 帮助信息正确
-- `node dist/cli.js collect --command "echo hello" --output /tmp/test.log` — 冒烟测试
+- `pnpm test` — all tests pass
+- `pnpm build` — build succeeds
+- `node dist/cli.js --help` — help message is correct
+- `node dist/cli.js collect --command "echo hello" --output /tmp/test.log` — smoke test
 
 ---
 
 ## Verification
 
-1. `pnpm build` — 产出 `dist/cli.js`
-2. `pnpm test` — 所有测试通过
-3. `pnpm run check` — 无 lint 错误
-4. `node dist/cli.js --help` — 显示帮助
-5. `node dist/cli.js collect --command "echo ok" --output /tmp/shc.log` — 日志文件正确
-6. 检查 `.github/workflows/copilot.yml` 语法正确
+1. `pnpm build` — produces `dist/cli.js`
+2. `pnpm test` — all tests pass
+3. `pnpm run check` — no lint errors
+4. `node dist/cli.js --help` — displays help
+5. `node dist/cli.js collect --command "echo ok" --output /tmp/shc.log` — log file is correct
+6. Verify `.github/workflows/copilot.yml` syntax is valid
