@@ -6,8 +6,7 @@ export type PrBodyOptions = {
   logSnippet: string;
 };
 
-export const buildPrBody
-  = (options: PrBodyOptions): string => {
+export const buildPrBody = (options: PrBodyOptions): string => {
   return `## Auto-generated Fix
 
 This PR was automatically created to fix CI failures on **${options.baseBranch}**.
