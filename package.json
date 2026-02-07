@@ -11,7 +11,8 @@
   "scripts": {
     "prepare": "simple-git-hooks",
     "build": "rslib build",
-    "check": "biome check --write",
+    "check": "biome check",
+    "check:write": "biome check --write",
     "dev": "rslib build --watch",
     "format": "biome format --write",
     "test": "rstest",
