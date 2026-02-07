@@ -1,6 +1,7 @@
 import { exec } from './exec';
 
-export const getCurrentBranch = (cwd?: string): string => {
+export const getCurrentBranch
+  = (cwd?: string): string => {
   const result = exec('git branch --show-current', { cwd });
   return result.stdout.trim();
 };
