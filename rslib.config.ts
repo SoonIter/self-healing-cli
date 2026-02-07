@@ -4,8 +4,12 @@ export default defineConfig({
   lib: [
     {
       format: 'esm',
-      syntax: ['node 18'],
-      dts: true,
+      syntax: ['node 22'],
+      source: {
+        entry: {
+          cli: './src/cli.ts',
+        },
+      },
     },
   ],
 });

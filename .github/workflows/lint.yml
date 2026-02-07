@@ -1,0 +1,65 @@
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm build
+
+      - name: Lint
+        id: lint
+        continue-on-error: true
+        run: npx self-healing collect --command "pnpm run check" --output lint.log
+
+      - name: Test
+        id: test
+        continue-on-error: true
+        run: npx self-healing collect --command "pnpm test" --output test.log
+
+      - name: Heal lint
+        if: steps.lint.outcome == 'failure'
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm install -g @github/copilot
+          npx self-healing heal --log lint.log --verify "pnpm run check"
+
+      - name: Heal test
+        if: steps.test.outcome == 'failure'
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm install -g @github/copilot
+          npx self-healing heal --log test.log --verify "pnpm test"
+
+      - name: Fail if checks failed
+        if: steps.lint.outcome == 'failure' || steps.test.outcome == 'failure'
+        run: exit 1

@@ -2,13 +2,9 @@
   "name": "self-healing-cli",
   "version": "1.0.0",
   "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
+  "bin": {
+    "self-healing": "./dist/cli.js"
   },
-  "types": "./dist/index.d.ts",
   "files": [
     "dist"
   ],
