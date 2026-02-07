@@ -46,7 +46,7 @@ jobs:
         if: steps.lint.outcome == 'failure'
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           npm install -g @github/copilot
           npx self-healing heal --log lint.log --verify "pnpm run check"
@@ -55,7 +55,7 @@ jobs:
         if: steps.test.outcome == 'failure'
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           npm install -g @github/copilot
           npx self-healing heal --log test.log --verify "pnpm test"

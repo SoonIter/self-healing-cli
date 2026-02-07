@@ -91,7 +91,7 @@ self-healing heal --log check.log --verify "pnpm run check" --model gpt-5.2
   if: steps.lint.outcome == 'failure'
   env:
     COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
-    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   run: |
     npm install -g @github/copilot
     npx self-healing heal --log lint.log --verify "pnpm run check"
