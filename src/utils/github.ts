@@ -58,9 +58,9 @@ export const commentOnCommit = (options: {
     'gh',
     [
       'api',
-      'repos/{owner}/{repo}/commits/' + options.sha + '/comments',
+      `repos/{owner}/{repo}/commits/${options.sha}/comments`,
       '-f',
-      'body=' + options.body,
+      `body=${options.body}`,
     ],
     { cwd: options.cwd },
   );
