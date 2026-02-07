@@ -1,4 +1,4 @@
-import { exec } from './exec';
+import { execArgs } from './exec';
 import { logger } from './logger';
 
 export type PrBodyOptions = {
@@ -27,8 +27,20 @@ export const createPullRequest = (options: {
   head: string;
   cwd?: string;
 }): string => {
-  const result = exec(
-    `gh pr create --title "${options.title}" --body "${options.body.replace(/"/g, '\\"')}" --base "${options.base}" --head "${options.head}"`,
+  const result = execArgs(
+    'gh',
+    [
+      'pr',
+      'create',
+      '--title',
+      options.title,
+      '--body',
+      options.body,
+      '--base',
+      options.base,
+      '--head',
+      options.head,
+    ],
     { cwd: options.cwd },
   );
   if (!result.ok) {
@@ -42,8 +54,14 @@ export const commentOnCommit = (options: {
   body: string;
   cwd?: string;
 }): void => {
-  const result = exec(
-    `gh api repos/{owner}/{repo}/commits/${options.sha}/comments -f body="${options.body.replace(/"/g, '\\"')}"`,
+  const result = execArgs(
+    'gh',
+    [
+      'api',
+      'repos/{owner}/{repo}/commits/' + options.sha + '/comments',
+      '-f',
+      'body=' + options.body,
+    ],
     { cwd: options.cwd },
   );
   if (!result.ok) {

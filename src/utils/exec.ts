@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execSync, spawnSync } from 'node:child_process';
 
 export type ExecResult = {
   ok: boolean;
@@ -32,4 +32,23 @@ export const exec = (
       exitCode: err.status ?? 1,
     };
   }
+};
+
+export const execArgs = (
+  file: string,
+  args: string[],
+  options?: { cwd?: string; env?: Record<string, string> },
+): ExecResult => {
+  const result = spawnSync(file, args, {
+    cwd: options?.cwd,
+    env: options?.env ? { ...process.env, ...options.env } : undefined,
+    encoding: 'utf-8',
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  return {
+    ok: result.status === 0,
+    stdout: result.stdout ?? '',
+    stderr: result.stderr ?? '',
+    exitCode: result.status ?? 1,
+  };
 };

@@ -1,6 +1,6 @@
 {
   "name": "self-healing-cli",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "bin": {
     "self-healing": "./dist/cli.js"

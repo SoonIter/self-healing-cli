@@ -118,8 +118,12 @@ export const heal = (options: HealOptions): HealResult => {
       head: fixBranch,
     });
 
-    logger.success(`PR created: ${prUrl}`);
-    return { fixed: true, prUrl };
+    if (prUrl) {
+      logger.success(`PR created: ${prUrl}`);
+    } else {
+      logger.error('Fix was applied but PR creation failed');
+    }
+    return { fixed: true, prUrl: prUrl || undefined };
   }
 
   // 10. Verification failed → comment on commit
